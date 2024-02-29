@@ -125,8 +125,8 @@ function App() {
         setItems(d);
         setFields(itemsFields);
       }
+      console.log("Excel finish");
     });
-    console.log("Excel finish");
   };
 
   let masterItems = [];
@@ -316,58 +316,84 @@ function App() {
     });
     console.log(`Finish`);
   };
+
+  const setTableData = () => {
+    setFields(masterItemsFields);
+    masterItems.map((item) => {
+      if (item.tempQty <= 0) {
+        updateMasterItems({ qtyNeed: 0 });
+      }
+    });
+    const sortedData = masterItems.sort(
+      (a, b) => b.qtyMisysNeed - a.qtyMisysNeed
+    );
+    setData(sortedData);
+  };
   return (
-    <div>
-      <button
-        onClick={() => {
-          setFields(masterItemsFields);
-
-          masterItems.map((item) => {
-            if (item.tempQty <= 0) {
-              updateMasterItems({ qtyNeed: 0 });
-            }
-          });
-          const sortedData = masterItems.sort(
-            (a, b) => b.qtyMisysNeed - a.qtyMisysNeed
-          );
-          setData(sortedData);
+    <div style={{ width: "100%", maxHeight: "100vh" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          // border: "1px solid",
+          justifyContent: "space-between",
         }}
       >
-        setData
-      </button>
-      <button
-        onClick={() => {
-          handleCompute();
-          setFields(masterItemsFields);
+        <input
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            readExcel(file);
+          }}
+        />
+        <label id="label"></label>
+      </div>
+      {items.length > 0 && boms.length > 0 && table1.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            // border: "1px solid",
+            marginTop: "10px",
+            justifyContent: "space-between",
+          }}
+        >
+          <button
+            onClick={() => {
+              handleCompute();
+              setTableData();
+              document.getElementById("btn-Excel").disabled = false;
+            }}
+          >
+            Compute
+          </button>
 
-          masterItems.map((item) => {
-            if (item.tempQty <= 0) {
-              updateMasterItems({ qtyNeed: 0 });
-            }
-          });
-          const sortedData = masterItems.sort(
-            (a, b) => b.qtyMisysNeed - a.qtyMisysNeed
-          );
-          setData(sortedData);
-        }}
-      >
-        Compute
-      </button>
+          <button id="btn-Excel" disabled onClick={scrapeData}>
+            Download Excel File
+          </button>
+        </div>
+      )}
 
-      <input
-        type="file"
-        onChange={(e) => {
-          const file = e.target.files[0];
-          readExcel(file);
-        }}
-      />
-      <label id="label"></label>
-      {/* <button onClick={onDownload}>Export Data</button> */}
-      <button onClick={scrapeData}>Scrape Data</button>
-      <table ref={tableRef} id="my-table-id">
-        {data.length > 0 && (
-          <>
-            {/* <thead>
+      {data.length > 0 && (
+        <div
+          style={{
+            maxHeight: "80vh",
+            overflowY: "scroll",
+            border: "1px solid black",
+            marginTop: "10px",
+          }}
+        >
+          <table
+            ref={tableRef}
+            id="my-table-id"
+            style={{
+              color: "black",
+              backgroundColor: "whitesmoke",
+            }}
+          >
+            {data.length > 0 && (
+              <>
+                {/* <thead>
               <tr>
                 {Object.keys(data[0]).map((key) => {
                   if (fields.includes(key)) {
@@ -376,38 +402,46 @@ function App() {
                 })}
               </tr>
             </thead> */}
-            <tbody>
-              <tr>
-                {Object.keys(data[0]).map((key) => {
-                  if (fields.includes(key)) {
-                    return <td key={uid()}>{key}</td>;
-                  }
-                })}
-              </tr>
-
-              {data.map((item, index) => {
-                return (
-                  <tr key={index}>
-                    {Object.keys(item).map((key3, index) => {
-                      if (fields.includes(key3)) {
-                        return (
-                          <td key={index}>
-                            {typeof item[key3] === "boolean"
-                              ? item[key3].toString()
-                              : typeof item[key3] === "number"
-                              ? item[key3].toFixed(2)
-                              : item[key3]}
-                          </td>
-                        );
+                <tbody>
+                  <tr
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      backgroundColor: "lightblue",
+                    }}
+                  >
+                    {Object.keys(data[0]).map((key) => {
+                      if (fields.includes(key)) {
+                        return <td key={uid()}>{key}</td>;
                       }
                     })}
                   </tr>
-                );
-              })}
-            </tbody>
-          </>
-        )}
-      </table>
+
+                  {data.map((item, index) => {
+                    return (
+                      <tr key={index}>
+                        {Object.keys(item).map((key3, index) => {
+                          if (fields.includes(key3)) {
+                            return (
+                              <td key={index}>
+                                {typeof item[key3] === "boolean"
+                                  ? item[key3].toString()
+                                  : typeof item[key3] === "number"
+                                  ? item[key3].toFixed(2)
+                                  : item[key3]}
+                              </td>
+                            );
+                          }
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </>
+            )}
+          </table>
+        </div>
+      )}
     </div>
   );
 }
