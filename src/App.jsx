@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 // import { useDownloadExcel } from "react-export-table-to-excel";
 import { uid } from "uid";
 function App() {
+  const [loading, setLoading] = useState(false);
   const [fields, setFields] = useState([]);
   const [items, setItems] = useState([]);
   const [table1, setTable1] = useState([]);
@@ -125,6 +126,7 @@ function App() {
         setItems(d);
         setFields(itemsFields);
       }
+
       console.log("Excel finish");
     });
   };
@@ -256,8 +258,7 @@ function App() {
     // segregate topLevels
     masterItems.map((item, index) => {
       const topLevel = !isTopLevelWhereUse(item.itemId);
-      console.log(`Processing ${index + 1} of ${masterItems.length}`);
-
+      // console.log(`Processing ${index + 1} of ${masterItems.length}`);
       updateMasterItems({ itemId: item.itemId, topLevel });
     });
 
@@ -284,7 +285,7 @@ function App() {
       const filteredBoms = boms.filter((bom) => itemId === bom.bomItem);
 
       filteredBoms.map((bom, index) => {
-        console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
+        // console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
         const qtyMisysNeed = qty * bom.qty;
         const itemData = masterItems.filter(
           (item) => item.itemId === bom.partId
@@ -315,6 +316,7 @@ function App() {
       getSubsMisysNeed(topItem.itemId, topItem.ordQty - topItem.endQty);
     });
     console.log(`Finish`);
+    return true;
   };
 
   const setTableData = () => {
@@ -328,9 +330,16 @@ function App() {
       (a, b) => b.qtyMisysNeed - a.qtyMisysNeed
     );
     setData(sortedData);
+    setLoading(false);
+    setElementValue("lblMsg", "Finish");
   };
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
+      <div style={{ padding: "15px" }}>
+        <label>
+          <i>This site is for merging Excel File - Noel Pulido</i>
+        </label>
+      </div>
       <div
         style={{
           display: "flex",
@@ -354,27 +363,36 @@ function App() {
             display: "flex",
             flexDirection: "row",
             // border: "1px solid",
+            minWidth: "500px",
             marginTop: "10px",
             justifyContent: "space-between",
           }}
         >
-          <button
-            onClick={() => {
-              handleCompute();
-              setTableData();
-              document.getElementById("btn-Excel").disabled = false;
-            }}
-          >
-            Compute
-          </button>
-
-          <button id="btn-Excel" disabled onClick={scrapeData}>
-            Download Excel File
-          </button>
+          {loading === false && (
+            <button
+              id="btn-Compute"
+              onClick={() => {
+                setElementValue("lblMsg", "Please Wait....");
+                setLoading(true);
+                setTimeout(() => {
+                  handleCompute();
+                  setTableData();
+                }, 1000);
+              }}
+            >
+              Compute
+            </button>
+          )}
+          <label id="lblMsg"></label>
+          {loading === false && (
+            <button id="btn-Excel" onClick={scrapeData}>
+              Download Excel File
+            </button>
+          )}
         </div>
       )}
 
-      {data.length > 0 && (
+      {data.length > 0 && loading === false && (
         <div
           style={{
             maxHeight: "80vh",
