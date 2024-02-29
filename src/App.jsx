@@ -326,9 +326,15 @@ function App() {
         updateMasterItems({ qtyNeed: 0 });
       }
     });
-    const sortedData = masterItems.sort(
-      (a, b) => b.qtyMisysNeed - a.qtyMisysNeed
-    );
+
+    const sortedData = masterItems
+      .filter((item) => item.itemId !== undefined)
+      .filter((item) => {
+        const str = item.itemId;
+
+        return str.indexOf("MA-") === -1;
+      })
+      .sort((a, b) => b.qtyMisysNeed - a.qtyMisysNeed);
     setData(sortedData);
     setLoading(false);
     setElementValue("lblMsg", "Finish");
