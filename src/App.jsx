@@ -447,7 +447,15 @@ function App() {
                         {Object.keys(item).map((key3, index) => {
                           if (fields.includes(key3)) {
                             return (
-                              <td key={index}>
+                              <td
+                                key={index}
+                                style={{
+                                  color:
+                                    item[key3] > 0 && key3 === "qtyMisysNeed"
+                                      ? "red"
+                                      : "black",
+                                }}
+                              >
                                 {typeof item[key3] === "boolean"
                                   ? item[key3].toString()
                                   : typeof item[key3] === "number"
