@@ -22,9 +22,10 @@ function App() {
     "totQOrd",
     "ordQty",
     "endQty",
+    "totQUsed",
     // "tempQty",
-    "qtyMisysNeed",
-    "excess",
+    "totQMisysNeed",
+    "totQExcess",
   ];
 
   const table1Fields = [
@@ -147,10 +148,10 @@ function App() {
           : item.endQty;
       const tempQty = "tempQty" in objToUpdate ? objToUpdate.tempQty : 0;
 
-      const qtyMisysNeed =
-        "qtyMisysNeed" in objToUpdate
-          ? item.qtyMisysNeed + objToUpdate.qtyMisysNeed
-          : item.qtyMisysNeed;
+      const totQMisysNeed =
+        "totQMisysNeed" in objToUpdate
+          ? item.totQMisysNeed + objToUpdate.totQMisysNeed
+          : item.totQMisysNeed;
 
       const qtyNeed =
         "qtyNeed" in objToUpdate
@@ -167,7 +168,7 @@ function App() {
           ordQty,
           endQty,
           tempQty,
-          qtyMisysNeed,
+          totQMisysNeed,
           qtyNeed,
           // excess: qtyNeed > 0 ? 0 : Math.abs(qtyNeed),
         };
@@ -195,18 +196,21 @@ function App() {
       const totQStk = "totQStk" in objToUpdate ? objToUpdate.totQStk : 0;
       const totQWip = "totQWip" in objToUpdate ? objToUpdate.totQWip : 0;
       const totQOrd = "totQOrd" in objToUpdate ? objToUpdate.totQOrd : 0;
+      const totQExcess =
+        "totQExcess" in objToUpdate ? objToUpdate.totQExcess : 0;
 
       masterItems.push({
         itemId,
         totQStk,
         totQWip,
         totQOrd,
+        totQUsed: 0,
         ordQty: 0,
         endQty: 0,
         tempQty: 0,
-        qtyMisysNeed: 0,
+        totQMisysNeed: 0,
         qtyNeed: 0,
-        excess: 0,
+        totQExcess,
         topLevel: "false",
       });
     }
@@ -238,12 +242,19 @@ function App() {
   };
 
   const handleCompute = () => {
+    let openMos = [];
     masterItems = [];
     // items transfer stocks
     console.log("Transferring Items Data...");
     items.map((item) => {
       const { itemId, totQStk, totQWip, totQOrd } = item;
-      updateMasterItems({ itemId, totQStk, totQWip, totQOrd });
+      updateMasterItems({
+        itemId,
+        totQStk,
+        totQWip,
+        totQOrd,
+        totQExcess: totQStk + totQWip + totQOrd,
+      });
     });
 
     console.log("Transferring Open Mo data");
@@ -251,7 +262,13 @@ function App() {
     table1.map((mo) => {
       const { ordQty, endQty } = mo;
       const itemId = mo.buildItem;
-      updateMasterItems({ itemId, ordQty, endQty });
+      const i = masterItems.filter((item) => item.itemId === itemId);
+      updateMasterItems({
+        itemId,
+        ordQty,
+        endQty,
+        totQExcess: i[0].totQExcess + ordQty - endQty,
+      });
     });
 
     console.log("Getting Items without bom where used");
@@ -281,29 +298,78 @@ function App() {
     //get misysNeed for subs
     console.log("Setting qty for open mo with mo where used");
 
-    const getSubsMisysNeed = (itemId, qty) => {
+    const getSubsMisysNeed = (itemId, qty, upperMoQty) => {
+      // Step 1. Get all the subs of itemId
       const filteredBoms = boms.filter((bom) => itemId === bom.bomItem);
-
+      if (filteredBoms.length === 0) {
+        return;
+      }
+      // step 2. Iterate all the subs
       filteredBoms.map((bom, index) => {
         // console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
-        const qtyMisysNeed = qty * bom.qty;
+        // 2.1 get qty of sub misys need
+        const qtyMisysNeed =
+          qty + upperMoQty < 0 ? 0 : (+qty + +upperMoQty) * bom.qty;
+        if (bom.partId === "71304") {
+          console.log("qtyMisysNeed");
+          console.log(qty);
+          console.log(upperMoQty);
+          console.log(bom.qty);
+
+          console.log(qtyMisysNeed);
+        }
+
+        // 2.2 get sub info
         const itemData = masterItems.filter(
           (item) => item.itemId === bom.partId
         );
-        const { totQStk, totQWip, totQOrd, ordQty, endQty } = itemData[0];
-        const totalStock = totQStk + totQWip + totQOrd + ordQty - endQty;
+        const {
+          totQStk,
+          totQWip,
+          totQOrd,
+          ordQty,
+          endQty,
+          totQUsed,
+          totQExcess,
+          totQMisysNeed,
+        } = itemData[0];
 
-        let tempQtyNeed = qtyMisysNeed - totalStock;
+        const totalStock =
+          totQStk + totQWip + totQOrd + ordQty - endQty - totQUsed;
 
-        const qtyMo = ordQty - endQty;
-        const qtyNeed = qtyMo > tempQtyNeed ? qtyMo : tempQtyNeed;
+        let tempQtyNeed = +qtyMisysNeed - totalStock;
 
-        updateMasterItems({
+        let qtyMo = ordQty - endQty;
+
+        const qtyNeed = tempQtyNeed < 0 ? 0 : tempQtyNeed;
+
+        const qtyUsed = tempQtyNeed < 0 ? qtyMisysNeed : qtyMisysNeed - qtyNeed;
+
+        if (bom.partId === "71304") {
+          console.log(
+            `${bom.partId} misysneed: ${qtyMisysNeed} 
+            totMisysneed ${totQMisysNeed} 
+            qtyUsed ${qtyUsed}  qtyNeed ${qtyNeed}  totalStock ${totalStock}`
+          );
+        }
+        const objToUpdate = {
           itemId: bom.partId,
-          qtyMisysNeed: tempQtyNeed <= 0 ? 0 : tempQtyNeed,
-          excess: tempQtyNeed <= 0 ? Math.abs(tempQtyNeed) : 0,
-        });
-        getSubsMisysNeed(bom.partId, qtyNeed);
+          totQMisysNeed: tempQtyNeed < 0 ? 0 : tempQtyNeed,
+          totQUsed: totQUsed + qtyUsed,
+          totQExcess: totQExcess - (qtyUsed >= 0 ? qtyUsed : 0),
+        };
+        updateMasterItems(objToUpdate);
+        if (bom.partId === "71304") {
+          console.log(bom.bomItem);
+          console.log(objToUpdate);
+        }
+        const openMo = openMos.filter((openMo) => openMo === bom.partId);
+        if (openMo.length === 0) {
+          openMos.push(bom.partId);
+        } else {
+          qtyMo = 0;
+        }
+        getSubsMisysNeed(bom.partId, qtyNeed, qtyMo);
       });
     };
     const filteredMasterItems = masterItems.filter(
@@ -311,9 +377,9 @@ function App() {
     );
 
     filteredMasterItems.map((topItem, index) => {
-      console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
+      // console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
 
-      getSubsMisysNeed(topItem.itemId, topItem.ordQty - topItem.endQty);
+      getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
     });
     console.log(`Finish`);
     return true;
@@ -334,7 +400,7 @@ function App() {
 
         return str.indexOf("MA-") === -1;
       })
-      .sort((a, b) => b.qtyMisysNeed - a.qtyMisysNeed);
+      .sort((a, b) => b.totQMisysNeed - a.totQMisysNeed);
     setData(sortedData);
     setLoading(false);
     setElementValue("lblMsg", "Finish");
