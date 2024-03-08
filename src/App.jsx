@@ -7,6 +7,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [fields, setFields] = useState([]);
   const [items, setItems] = useState([]);
+  const [parentList, setParentList] = useState([]);
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
   const [boms, setBoms] = useState([]);
@@ -252,6 +253,26 @@ function App() {
     }, 0);
   };
 
+  const getFamily = (fatherItem) => {
+    const p = parentList.filter((parent) => {
+      return parent.parent === fatherItem && parent.child.indexOf("MA-") === -1;
+    });
+    console.log(p);
+    setData(
+      masterList.filter((item) => {
+        if (item.itemId === fatherItem) {
+          return item;
+        }
+        const fam = p.filter((family) => family.child === item.itemId);
+        if (fam.length > 0) {
+          return item;
+        }
+
+        return;
+      })
+    );
+  };
+
   const handleCompute = () => {
     let openMos = [];
     masterItems = [];
@@ -292,6 +313,7 @@ function App() {
 
     //get misysNeed for subs
     console.log("Setting qty for open mo with mo where used");
+    const parentChild = [];
 
     const getSubsMisysNeed = (itemId, qty, upperMoQty) => {
       // Step 1. Get all the subs of itemId
@@ -345,6 +367,7 @@ function App() {
         } else {
           qtyMo = 0;
         }
+        parentChild.push({ parent: parentItem, child: bom.partId });
         getSubsMisysNeed(bom.partId, qtyNeed, qtyMo);
       });
     };
@@ -352,11 +375,14 @@ function App() {
       (item) => item.topLevel === true && item.ordQty > 0
     );
 
+    let parentItem = "";
+
     filteredMasterItems.map((topItem, index) => {
       console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
-
+      parentItem = topItem.itemId;
       getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
     });
+    setParentList(parentChild);
     console.log(`Finish`);
     return true;
   };
@@ -431,6 +457,25 @@ function App() {
             >
               Compute
             </button>
+          )}
+          {loading === false && (
+            <div>
+              {" "}
+              <button
+                onClick={() => {
+                  // getFamily("AL-0105");
+                  // Get the input element by its ID
+                  let inputField = document.getElementById("fatherItem");
+
+                  // Get the value of the input field
+                  let value = inputField.value;
+                  getFamily(value);
+                }}
+              >
+                Get family
+              </button>{" "}
+              <input type="text" id="fatherItem"></input>
+            </div>
           )}
           <label id="lblMsg"></label>
           {loading === false && (
