@@ -413,6 +413,9 @@ function App() {
     setMasterList(sortedData);
     setLoading(false);
     setElementValue("lblMsg", "Finish");
+    setTimeout(() => {
+      setElementValue("lblMsg", "");
+    }, 5000);
   };
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
@@ -424,23 +427,25 @@ function App() {
       <div style={{ padding: "15px" }}>
         <label id="lblMsg"></label>
       </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          // border: "1px solid",
-          justifyContent: "space-between",
-        }}
-      >
-        <input
-          type="file"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            readExcel(file);
+      {data.length === 0 && loading === false && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            // border: "1px solid",
+            justifyContent: "space-between",
           }}
-        />
-        <label id="label"></label>
-      </div>
+        >
+          <input
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              readExcel(file);
+            }}
+          />
+          <label id="label"></label>
+        </div>
+      )}
       {items.length > 0 && boms.length > 0 && table1.length > 0 && (
         <div
           style={{
@@ -468,17 +473,23 @@ function App() {
             </button>
           )}
           {loading === false && (
-            <Select
-              options={fatherOptions}
-              placeholder="Select Item"
-              style={{ minWidth: "200px" }}
-              separator={true}
-              onChange={(values) => {
-                setSelectedFather(values[0].value);
-                const d = getFamily(values[0].value);
-                setData(d);
-              }}
-            />
+            <div>
+              <label>
+                Select item with open MO with NO MO where use to show related
+                items
+              </label>
+              <Select
+                options={fatherOptions}
+                placeholder="Select item with open MO with NO MO where use"
+                style={{ minWidth: "50%" }}
+                separator={true}
+                onChange={(values) => {
+                  setSelectedFather(values[0].value);
+                  const d = getFamily(values[0].value);
+                  setData(d);
+                }}
+              />
+            </div>
           )}
 
           {loading === false && (
@@ -551,9 +562,17 @@ function App() {
                                 key={index}
                                 style={{
                                   color:
-                                    item[key3] > 0 && key3 === "qtyMisysNeed"
+                                    (item[key3] > 0 &&
+                                      key3 === "totQMisysNeed") ||
+                                    item["itemId"] === selectedFather
                                       ? "red"
                                       : "black",
+                                  fontSize:
+                                    (item[key3] > 0 &&
+                                      key3 === "totQMisysNeed") ||
+                                    item["itemId"] === selectedFather
+                                      ? "20px"
+                                      : "16px",
                                 }}
                               >
                                 {typeof item[key3] === "boolean"
