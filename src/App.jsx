@@ -10,8 +10,10 @@ function App() {
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
   const [boms, setBoms] = useState([]);
+  const refSort = useRef({ key: "totQMisysNeed", ascending: false });
 
   const [data, setData] = useState([]);
+  const [masterList, setMasterList] = useState([]);
 
   let topLevelWhereUse = false;
 
@@ -226,6 +228,30 @@ function App() {
     return topLevelWhereUse;
   };
 
+  const sortMasterList = (key) => {
+    setData([]);
+    let sortedData = [];
+
+    if (refSort.current.key === key) {
+      refSort.current.ascending = !refSort.current.ascending;
+    } else {
+      refSort.current.key = key;
+      refSort.current.ascending = key !== "itemId" ? false : true;
+    }
+
+    sortedData = refSort.current.ascending
+      ? key !== "itemId"
+        ? masterList.sort((a, b) => a[key] - b[key])
+        : masterList.sort((a, b) => a[key].localeCompare(b[key]))
+      : key !== "itemId"
+      ? masterList.sort((a, b) => b[key] - a[key])
+      : masterList.sort((a, b) => b[key].localeCompare(a[key]));
+
+    setTimeout(() => {
+      setData(sortedData);
+    }, 0);
+  };
+
   const handleCompute = () => {
     let openMos = [];
     masterItems = [];
@@ -352,6 +378,7 @@ function App() {
       })
       .sort((a, b) => b.totQMisysNeed - a.totQMisysNeed);
     setData(sortedData);
+    setMasterList(sortedData);
     setLoading(false);
     setElementValue("lblMsg", "Finish");
   };
@@ -359,7 +386,7 @@ function App() {
     <div style={{ width: "100%", maxHeight: "100vh" }}>
       <div style={{ padding: "15px" }}>
         <label>
-          <i>This site is for merging Excel File - Noel Pulido</i>
+          <i>This site is for merging Excel Files - Noel Pulido</i>
         </label>
       </div>
       <div
@@ -452,7 +479,16 @@ function App() {
                   >
                     {Object.keys(data[0]).map((key) => {
                       if (fields.includes(key)) {
-                        return <td key={uid()}>{key}</td>;
+                        return (
+                          <td
+                            key={uid()}
+                            onClick={() => {
+                              sortMasterList(key);
+                            }}
+                          >
+                            {key}
+                          </td>
+                        );
                       }
                     })}
                   </tr>
