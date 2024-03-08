@@ -170,26 +170,11 @@ function App() {
           tempQty,
           totQMisysNeed,
           qtyNeed,
-          // excess: qtyNeed > 0 ? 0 : Math.abs(qtyNeed),
         };
-        // if (objToUpdate.itemId === "10161/102P") {
-        //   console.log(`---${objToUpdate.itemId}`);
-        //   console.log(`tempqty: ${objToUpdate.tempQty}`);
-        //   console.log(`misysNeed: ${qtyMisysNeed}`);
-        //   console.log(`qtyNeed: ${masterItems[i].qtyNeed}`);
-        //   console.log("-------------------------");
-        // }
-        // if (objToUpdate.itemId === "WCS-0034/800") {
-        //   console.log("---WCS-0034/800");
-        //   console.log(`tempqty: ${objToUpdate.tempQty}`);
-        //   console.log(`misysNeed: ${qtyMisysNeed}`);
-        //   console.log(`qtyNeed: ${masterItems[i].qtyNeed}`);
-        //   console.log("---");
-        // }
+
         return true;
       }
     });
-    // console.log(obj);
 
     if (obj === undefined) {
       const itemId = objToUpdate.itemId;
@@ -271,29 +256,13 @@ function App() {
       });
     });
 
-    console.log("Getting Items without bom where used");
+    console.log("Getting Items without bom where used or w/o mo where used");
     // segregate topLevels
     masterItems.map((item, index) => {
       const topLevel = !isTopLevelWhereUse(item.itemId);
-      // console.log(`Processing ${index + 1} of ${masterItems.length}`);
+      console.log(`Processing ${index + 1} of ${masterItems.length}`);
       updateMasterItems({ itemId: item.itemId, topLevel });
     });
-
-    //get  topLevels
-
-    console.log("Getting Items with Open Mo without mo where used");
-    // const topItems = masterItems.filter(
-    //   (item) => item.topLevel === true && item.ordQty > 0
-    // );
-
-    //get misysNeed for topLevels
-    // console.log("Setting qty for open mo without mo where used");
-    // topItems.map((topItem, index) => {
-    //   const { itemId, ordQty, endQty } = topItem;
-    //   console.log(`Processing ${index + 1} of ${topItems.length}`);
-
-    //   updateMasterItems({ itemId, qtyMisysNeed: ordQty - endQty });
-    // });
 
     //get misysNeed for subs
     console.log("Setting qty for open mo with mo where used");
@@ -306,18 +275,10 @@ function App() {
       }
       // step 2. Iterate all the subs
       filteredBoms.map((bom, index) => {
-        // console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
+        console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
         // 2.1 get qty of sub misys need
         const qtyMisysNeed =
           qty + upperMoQty < 0 ? 0 : (+qty + +upperMoQty) * bom.qty;
-        if (bom.partId === "71304") {
-          console.log("qtyMisysNeed");
-          console.log(qty);
-          console.log(upperMoQty);
-          console.log(bom.qty);
-
-          console.log(qtyMisysNeed);
-        }
 
         // 2.2 get sub info
         const itemData = masterItems.filter(
@@ -331,7 +292,6 @@ function App() {
           endQty,
           totQUsed,
           totQExcess,
-          totQMisysNeed,
         } = itemData[0];
 
         const totalStock =
@@ -345,13 +305,6 @@ function App() {
 
         const qtyUsed = tempQtyNeed < 0 ? qtyMisysNeed : qtyMisysNeed - qtyNeed;
 
-        if (bom.partId === "71304") {
-          console.log(
-            `${bom.partId} misysneed: ${qtyMisysNeed} 
-            totMisysneed ${totQMisysNeed} 
-            qtyUsed ${qtyUsed}  qtyNeed ${qtyNeed}  totalStock ${totalStock}`
-          );
-        }
         const objToUpdate = {
           itemId: bom.partId,
           totQMisysNeed: tempQtyNeed < 0 ? 0 : tempQtyNeed,
@@ -359,10 +312,7 @@ function App() {
           totQExcess: totQExcess - (qtyUsed >= 0 ? qtyUsed : 0),
         };
         updateMasterItems(objToUpdate);
-        if (bom.partId === "71304") {
-          console.log(bom.bomItem);
-          console.log(objToUpdate);
-        }
+
         const openMo = openMos.filter((openMo) => openMo === bom.partId);
         if (openMo.length === 0) {
           openMos.push(bom.partId);
@@ -377,7 +327,7 @@ function App() {
     );
 
     filteredMasterItems.map((topItem, index) => {
-      // console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
+      console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
 
       getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
     });
