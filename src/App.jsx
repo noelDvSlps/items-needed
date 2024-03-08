@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import "./App.css";
 import * as XLSX from "xlsx";
-// import { useDownloadExcel } from "react-export-table-to-excel";
+import Select from "react-dropdown-select";
 import { uid } from "uid";
 function App() {
   const [loading, setLoading] = useState(false);
   const [fields, setFields] = useState([]);
   const [items, setItems] = useState([]);
+  const [fatherOptions, setFatherOptions] = useState([]);
+  const [selectedFather, setSelectedFather] = useState("");
   const [parentList, setParentList] = useState([]);
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
@@ -99,8 +101,6 @@ function App() {
     });
 
     promise.then((d) => {
-      // console.log(d);
-      // setData(d);
       const tableName = getElementValue("label");
       if (tableName === "MIMOH") {
         setTable1(d);
@@ -122,7 +122,6 @@ function App() {
           }
           return bom;
         });
-        // setData(array);
         setBoms(array);
         setFields(bomsFields);
       }
@@ -230,6 +229,7 @@ function App() {
   };
 
   const sortMasterList = (key) => {
+    const famData = getFamily(selectedFather);
     setData([]);
     let sortedData = [];
 
@@ -242,11 +242,11 @@ function App() {
 
     sortedData = refSort.current.ascending
       ? key !== "itemId"
-        ? masterList.sort((a, b) => a[key] - b[key])
-        : masterList.sort((a, b) => a[key].localeCompare(b[key]))
+        ? famData.sort((a, b) => a[key] - b[key])
+        : famData.sort((a, b) => a[key].localeCompare(b[key]))
       : key !== "itemId"
-      ? masterList.sort((a, b) => b[key] - a[key])
-      : masterList.sort((a, b) => b[key].localeCompare(a[key]));
+      ? famData.sort((a, b) => b[key] - a[key])
+      : famData.sort((a, b) => b[key].localeCompare(a[key]));
 
     setTimeout(() => {
       setData(sortedData);
@@ -254,23 +254,25 @@ function App() {
   };
 
   const getFamily = (fatherItem) => {
+    if (fatherItem === "ALL") {
+      return masterList;
+    }
     const p = parentList.filter((parent) => {
       return parent.parent === fatherItem && parent.child.indexOf("MA-") === -1;
     });
     console.log(p);
-    setData(
-      masterList.filter((item) => {
-        if (item.itemId === fatherItem) {
-          return item;
-        }
-        const fam = p.filter((family) => family.child === item.itemId);
-        if (fam.length > 0) {
-          return item;
-        }
+    const data = masterList.filter((item) => {
+      if (item.itemId === fatherItem) {
+        return item;
+      }
+      const fam = p.filter((family) => family.child === item.itemId);
+      if (fam.length > 0) {
+        return item;
+      }
 
-        return;
-      })
-    );
+      return;
+    });
+    return data;
   };
 
   const handleCompute = () => {
@@ -376,13 +378,17 @@ function App() {
     );
 
     let parentItem = "";
+    let options = [{ value: "ALL", label: "ALL" }];
 
     filteredMasterItems.map((topItem, index) => {
       console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
       parentItem = topItem.itemId;
+      options.push({ value: parentItem, label: parentItem });
+
       getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
     });
     setParentList(parentChild);
+    setFatherOptions(options);
     console.log(`Finish`);
     return true;
   };
@@ -415,6 +421,9 @@ function App() {
           <i>This site is for merging Excel Files - Noel Pulido</i>
         </label>
       </div>
+      <div style={{ padding: "15px" }}>
+        <label id="lblMsg"></label>
+      </div>
       <div
         style={{
           display: "flex",
@@ -438,7 +447,7 @@ function App() {
             display: "flex",
             flexDirection: "row",
             // border: "1px solid",
-            minWidth: "500px",
+            minWidth: "900px",
             marginTop: "10px",
             justifyContent: "space-between",
           }}
@@ -459,25 +468,19 @@ function App() {
             </button>
           )}
           {loading === false && (
-            <div>
-              {" "}
-              <button
-                onClick={() => {
-                  // getFamily("AL-0105");
-                  // Get the input element by its ID
-                  let inputField = document.getElementById("fatherItem");
-
-                  // Get the value of the input field
-                  let value = inputField.value;
-                  getFamily(value);
-                }}
-              >
-                Get family
-              </button>{" "}
-              <input type="text" id="fatherItem"></input>
-            </div>
+            <Select
+              options={fatherOptions}
+              placeholder="Select Item"
+              style={{ minWidth: "200px" }}
+              separator={true}
+              onChange={(values) => {
+                setSelectedFather(values[0].value);
+                const d = getFamily(values[0].value);
+                setData(d);
+              }}
+            />
           )}
-          <label id="lblMsg"></label>
+
           {loading === false && (
             <button id="btn-Excel" onClick={scrapeData}>
               Download Excel File
@@ -485,7 +488,6 @@ function App() {
           )}
         </div>
       )}
-
       {data.length > 0 && loading === false && (
         <div
           style={{
@@ -501,6 +503,7 @@ function App() {
             style={{
               color: "black",
               backgroundColor: "whitesmoke",
+              width: "900px",
             }}
           >
             {data.length > 0 && (
