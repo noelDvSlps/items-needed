@@ -3,8 +3,34 @@ import "./App.css";
 import * as XLSX from "xlsx";
 import Select from "react-dropdown-select";
 import { uid } from "uid";
+import Modal from "react-modal";
 function App() {
+  const customStyles = {
+    content: {
+      top: "50%",
+      left: "50%",
+      right: "auto",
+      bottom: "auto",
+      marginRight: "-50%",
+      transform: "translate(-50%, -50%)",
+    },
+  };
+  Modal.setAppElement("#root");
+  const [modalIsOpen, setIsOpen] = useState(false);
+
+  function openModal() {
+    setIsOpen(true);
+  }
+
+  function afterOpenModal() {
+    // references are now sync'd and can be accessed.
+  }
+
+  function closeModal() {
+    setIsOpen(false);
+  }
   const [loading, setLoading] = useState(false);
+  const [modalData, setModalData] = useState([]);
   const [fields, setFields] = useState([]);
   const [items, setItems] = useState([]);
   const [fatherOptions, setFatherOptions] = useState([]);
@@ -40,6 +66,7 @@ function App() {
     "bomRev",
     "ordQty",
     "endQty",
+    "endDt",
   ];
 
   const table2Fields = ["mohId", "lineNbr", "cmnt"];
@@ -417,8 +444,39 @@ function App() {
       setElementValue("lblMsg", "");
     }, 5000);
   };
+
+  const convertDate = (num) => {
+    // const
+  };
+
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
+      <Modal
+        isOpen={modalIsOpen}
+        onAfterOpen={afterOpenModal}
+        onRequestClose={closeModal}
+        style={customStyles}
+        contentLabel="Example Modal"
+      >
+        <button onClick={closeModal}>close</button>
+        {modalData.length > 0 &&
+          modalData.map((mo, index) => (
+            <div
+              key={index}
+              style={{
+                border: "1px solid",
+                padding: "5px",
+                margin: "5px",
+                minWidth: "150px",
+                borderRadius: "8px",
+              }}
+            >
+              <div>MO# {mo.mohId}</div>
+              <div>QTY {mo.ordQty}</div>
+              {/* <div>DUE DATE {convertDate(mo.endDt)}</div> */}
+            </div>
+          ))}
+      </Modal>
       <div style={{ padding: "15px" }}>
         <label>
           <i>This site is for merging Excel Files - Noel Pulido</i>
@@ -554,7 +612,20 @@ function App() {
 
                   {data.map((item, index) => {
                     return (
-                      <tr key={index}>
+                      <tr
+                        key={index}
+                        onClick={() => {
+                          const data = [];
+                          const itemInfos = table1.filter(
+                            (mo) => item.itemId === mo.buildItem
+                          );
+                          data.push(...itemInfos);
+                          console.log(data);
+
+                          setModalData(data);
+                          openModal();
+                        }}
+                      >
                         {Object.keys(item).map((key3, index) => {
                           if (fields.includes(key3)) {
                             return (
