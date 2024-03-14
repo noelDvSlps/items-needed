@@ -13,6 +13,8 @@ function App() {
       bottom: "auto",
       marginRight: "-50%",
       transform: "translate(-50%, -50%)",
+      maxHeight: "80vh",
+      minWidth: "300px",
     },
   };
   Modal.setAppElement("#root");
@@ -134,7 +136,22 @@ function App() {
         setFields(table1Fields);
       }
       if (tableName === "MIMORD") {
-        setTable2(d);
+        let currentMO = null;
+        const sortedTable2 = d
+          .filter((item) => item.compQty === 0)
+          .sort(
+            (a, b) => a.mohId.localeCompare(b.mohId) || a.lineNbr - b.lineNbr
+          )
+          .map((item) => {
+            if (currentMO !== item.mohId) {
+              currentMO = item.mohId;
+              return item;
+            }
+            return;
+          })
+          .filter((item) => item !== undefined);
+        console.log(sortedTable2);
+        setTable2(sortedTable2);
         setFields(table2Fields);
       }
       if (tableName === "MIBOMD") {
@@ -445,8 +462,26 @@ function App() {
     }, 5000);
   };
 
-  const convertDate = (num) => {
-    // const
+  const convertDateExcel = (excelTimestamp) => {
+    // 1. Subtract number of days between Jan 1, 1900 and Jan 1, 1970, plus 1 (Google "excel leap year bug")
+    // 2. Convert to milliseconds.
+    const secondsInDay = 24 * 60 * 60;
+    const excelEpoch = new Date(1899, 11, 31);
+    const excelEpochAsUnixTimestamp = excelEpoch.getTime();
+    const missingLeapYearDay = secondsInDay * 1000;
+    const delta = excelEpochAsUnixTimestamp - missingLeapYearDay;
+    const excelTimestampAsUnixTimestamp = excelTimestamp * secondsInDay * 1000;
+    const parsed = excelTimestampAsUnixTimestamp + delta;
+    const localDate = isNaN(parsed)
+      ? "invalid Date"
+      : new Date(parsed).toLocaleDateString();
+    return localDate;
+  };
+
+  const getProcess = (mohId) => {
+    const a = table2.filter((mo) => mo.mohId === mohId);
+
+    return a.length !== 0 ? a[0].cmnt : "Is the MO a split?";
   };
 
   return (
@@ -459,6 +494,10 @@ function App() {
         contentLabel="Example Modal"
       >
         <button onClick={closeModal}>close</button>
+        {modalData.length > 0 && (
+          <div>Item Number: {modalData[0].buildItem}</div>
+        )}
+
         {modalData.length > 0 &&
           modalData.map((mo, index) => (
             <div
@@ -471,9 +510,12 @@ function App() {
                 borderRadius: "8px",
               }}
             >
+              <div>LOCATION {mo.locId}</div>
+              <div>JOB {mo.jobId}</div>
               <div>MO# {mo.mohId}</div>
               <div>QTY {mo.ordQty}</div>
-              {/* <div>DUE DATE {convertDate(mo.endDt)}</div> */}
+              <div>PROCESS {getProcess(mo.mohId)}</div>
+              <div>DUE DATE {convertDateExcel(mo.endDt)}</div>
             </div>
           ))}
       </Modal>
@@ -614,14 +656,13 @@ function App() {
                     return (
                       <tr
                         key={index}
-                        onClick={() => {
+                        onContextMenu={(e) => {
+                          e.preventDefault(); // prevent the default behaviour when right clicked
                           const data = [];
                           const itemInfos = table1.filter(
                             (mo) => item.itemId === mo.buildItem
                           );
                           data.push(...itemInfos);
-                          console.log(data);
-
                           setModalData(data);
                           openModal();
                         }}
