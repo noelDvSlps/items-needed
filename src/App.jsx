@@ -4,6 +4,8 @@ import * as XLSX from "xlsx";
 import Select from "react-dropdown-select";
 import { uid } from "uid";
 import Modal from "react-modal";
+import { createManufacturingOrder } from "./api/manufacturingOrder/createManufacturingOrder";
+import { deleteManufacturingOrders } from "./api/manufacturingOrder/deleteManufacturingOrders";
 function App() {
   const customStyles = {
     content: {
@@ -145,14 +147,32 @@ function App() {
           .map((item) => {
             if (currentMO !== item.mohId) {
               currentMO = item.mohId;
-              return item;
+              const ordQty = table1.filter((mo) => mo.mohId === item.mohId);
+              const prevQty = d.filter((prev) => {
+                return (
+                  prev.lineNbr === +item.lineNbr - 1 &&
+                  prev.mohId === item.mohId
+                );
+              });
+              const startQty =
+                prevQty[0] !== undefined
+                  ? prevQty[0].compQty
+                  : ordQty[0].ordQty;
+              return {
+                ...item,
+                startQty,
+                runTime: item.cycleTime * startQty + item.setupTime,
+              };
             }
             return;
           })
           .filter((item) => item !== undefined);
+
+        console.log("sortedTable2");
         console.log(sortedTable2);
         setTable2(sortedTable2);
         setFields(table2Fields);
+        updateProcesses(sortedTable2);
       }
       if (tableName === "MIBOMD") {
         const array = [];
@@ -482,6 +502,111 @@ function App() {
     const a = table2.filter((mo) => mo.mohId === mohId);
 
     return a.length !== 0 ? a[0].cmnt : "Is the MO a split?";
+  };
+
+  const getBuildItem = (mohId) => {
+    const result = table1.filter((item) => {
+      return item.mohId === mohId;
+    });
+
+    return result[0].buildItem;
+  };
+  const getLocId = (mohId) => {
+    const result = table1.filter((item) => {
+      return item.mohId === mohId;
+    });
+    console.log(result);
+
+    return result[0].locId;
+  };
+
+  const getDescr = (buildItem) => {
+    const result = items.filter((item) => {
+      return item.itemId === buildItem;
+    });
+
+    return result[0].descr;
+  };
+  // API
+  const updateProcesses = async (table2) => {
+    await deleteManufacturingOrders("ALL", "token");
+    // map table 1
+    table1.map(async (item, index) => {
+      console.log(index);
+      // check if exist in table 2
+      const filteredTable2 = table2.filter((mo) => mo.mohId === item.mohId);
+
+      // console.log("filteredTable2");
+
+      if (filteredTable2.length !== 0) {
+        const {
+          mohId,
+          opCode,
+          wcId,
+          lineNbr,
+          cycleTime,
+          setupTime,
+          startQty,
+          compQty,
+          runTime,
+          cmnt,
+        } = filteredTable2[0];
+
+        const buildItem = getBuildItem(mohId);
+        const descr = getDescr(buildItem);
+        const locId = getLocId(mohId);
+
+        await createManufacturingOrder({
+          mohId,
+          locId,
+          buildItem,
+          descr,
+          opCode,
+          wcId,
+          lineNbr,
+          cycleTime,
+          setupTime,
+          startQty,
+          compQty,
+          runTime,
+          cmnt,
+          createdAt: Date.now(),
+        });
+      }
+      if (filteredTable2.length === 0) {
+        const mohId = item.mohId;
+        const opCode = "☹️";
+        const wcId = "LOST IN SPACE";
+        const lineNbr = 0;
+        const cycleTime = 0;
+        const setupTime = 0;
+        const startQty = 0;
+        const compQty = 0;
+        const runTime = 0;
+        const cmnt = "is this a SPLIT? See Misys";
+
+        const buildItem = getBuildItem(mohId);
+        const descr = getDescr(buildItem);
+        const locId = item.locId;
+
+        await createManufacturingOrder({
+          mohId,
+          locId,
+          buildItem,
+          descr,
+          opCode,
+          wcId,
+          lineNbr,
+          cycleTime,
+          setupTime,
+          startQty,
+          compQty,
+          runTime,
+          cmnt,
+          createdAt: Date.now(),
+        });
+      }
+    });
   };
 
   return (
