@@ -2,6 +2,7 @@ import { API_CONFIG } from "../config";
 
 export const createManufacturingOrder = ({
   mohId,
+  dueDate,
   locId,
   buildItem,
   descr,
@@ -24,6 +25,7 @@ export const createManufacturingOrder = ({
     method: "POST",
     body: JSON.stringify({
       mohId,
+      dueDate,
       locId,
       buildItem,
       descr,

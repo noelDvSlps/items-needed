@@ -293,7 +293,8 @@ function App() {
   };
 
   const sortMasterList = (key) => {
-    const famData = getFamily(selectedFather);
+    const famData = getFamily(selectedFather === "" ? "ALL" : selectedFather);
+
     setData([]);
     let sortedData = [];
 
@@ -473,6 +474,7 @@ function App() {
         return str.indexOf("MA-") === -1;
       })
       .sort((a, b) => b.totQMisysNeed - a.totQMisysNeed);
+
     setData(sortedData);
     setMasterList(sortedData);
     setLoading(false);
@@ -492,6 +494,7 @@ function App() {
     const delta = excelEpochAsUnixTimestamp - missingLeapYearDay;
     const excelTimestampAsUnixTimestamp = excelTimestamp * secondsInDay * 1000;
     const parsed = excelTimestampAsUnixTimestamp + delta;
+
     const localDate = isNaN(parsed)
       ? "invalid Date"
       : new Date(parsed).toLocaleDateString();
@@ -516,8 +519,14 @@ function App() {
       return item.mohId === mohId;
     });
     console.log(result);
-
     return result[0].locId;
+  };
+  const getDueDate = (mohId) => {
+    const result = table1.filter((item) => {
+      return item.mohId === mohId;
+    });
+
+    return convertDateExcel(result[0].endDt);
   };
 
   const getDescr = (buildItem) => {
@@ -553,11 +562,14 @@ function App() {
         } = filteredTable2[0];
 
         const buildItem = getBuildItem(mohId);
+        console.log(buildItem);
         const descr = getDescr(buildItem);
         const locId = getLocId(mohId);
+        const dueDate = Date.parse(getDueDate(mohId));
 
         await createManufacturingOrder({
           mohId,
+          dueDate,
           locId,
           buildItem,
           descr,
@@ -587,10 +599,12 @@ function App() {
 
         const buildItem = getBuildItem(mohId);
         const descr = getDescr(buildItem);
-        const locId = item.locId;
+        const locId = item.locId ? item.locId : "n/a";
+        const dueDate = Date.parse(getDueDate(mohId));
 
         await createManufacturingOrder({
           mohId,
+          dueDate,
           locId,
           buildItem,
           descr,
@@ -705,6 +719,7 @@ function App() {
               </label>
               <Select
                 options={fatherOptions}
+                values={fatherOptions.length > 0 ? [fatherOptions[0]] : []}
                 placeholder="Select item with open MO with NO MO where use"
                 style={{ minWidth: "50%" }}
                 separator={true}
