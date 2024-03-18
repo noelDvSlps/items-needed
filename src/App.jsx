@@ -33,6 +33,7 @@ function App() {
   function closeModal() {
     setIsOpen(false);
   }
+  const [del, setDel] = useState(true);
   const [loading, setLoading] = useState(false);
   const [modalData, setModalData] = useState([]);
   const [fields, setFields] = useState([]);
@@ -538,7 +539,11 @@ function App() {
   };
   // API
   const updateProcesses = async (table2) => {
-    await deleteManufacturingOrders("ALL", "token");
+    alert(`Delete: ${del}`);
+    if (del === true) {
+      await deleteManufacturingOrders("ALL", "token");
+    }
+    setDel(!del);
     // map table 1
     table1.map(async (item, index) => {
       console.log(index);
