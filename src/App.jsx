@@ -66,6 +66,7 @@ function App() {
 
   const table1Fields = [
     "mohId",
+    "jobId",
     "locId",
     "buildItem",
     "bomRev",
@@ -519,8 +520,13 @@ function App() {
     const result = table1.filter((item) => {
       return item.mohId === mohId;
     });
-    console.log(result);
     return result[0].locId;
+  };
+  const getJobId = (mohId) => {
+    const result = table1.filter((item) => {
+      return item.mohId === mohId;
+    });
+    return result[0].jobId ? result[0].jobId : "unassigned";
   };
   const getDueDate = (mohId) => {
     const result = table1.filter((item) => {
@@ -571,10 +577,12 @@ function App() {
         const descr = getDescr(buildItem);
         const locId = getLocId(mohId);
         const dueDate = Date.parse(getDueDate(mohId));
+        const jobId = getJobId(mohId);
 
         await createManufacturingOrder({
           mohId,
           dueDate,
+          jobId,
           locId,
           buildItem,
           descr,
@@ -605,11 +613,13 @@ function App() {
         const buildItem = getBuildItem(mohId);
         const descr = getDescr(buildItem);
         const locId = item.locId ? item.locId : "n/a";
+        const jobId = item.jobId ? item.jobId : "n/a";
         const dueDate = Date.parse(getDueDate(mohId));
 
         await createManufacturingOrder({
           mohId,
           dueDate,
+          jobId,
           locId,
           buildItem,
           descr,
