@@ -47,6 +47,7 @@ function App() {
   const refSort = useRef({ key: "totQMisysNeed", ascending: false });
 
   const [data, setData] = useState([]);
+  const [qbData, setQbData] = useState([]);
   const [masterList, setMasterList] = useState([]);
 
   let topLevelWhereUse = false;
@@ -62,6 +63,7 @@ function App() {
     // "tempQty",
     "totQMisysNeed",
     "totQExcess",
+    "qbBackOrder",
   ];
 
   const table1Fields = [
@@ -135,6 +137,20 @@ function App() {
 
     promise.then((d) => {
       const tableName = getElementValue("label");
+
+      if (tableName === "Sheet1") {
+        const qb = d.map((item) => {
+          const itemNumber = item.__EMPTY_2;
+          const itemNumber2 = itemNumber ? itemNumber.split(" ") : [undefined];
+          item.__EMPTY_2 = itemNumber2[0];
+          return item;
+        });
+        const qb2 = qb.filter((item) => {
+          return item.__EMPTY_2 !== undefined && item.Available < 0;
+        });
+        console.log(qb2);
+        setQbData(qb2);
+      }
       if (tableName === "MIMOH") {
         setTable1(d);
         setFields(table1Fields);
@@ -192,6 +208,7 @@ function App() {
         setFields(bomsFields);
       }
       if (tableName === "MIITEM") {
+        console.log(d);
         setItems(d);
         setFields(itemsFields);
       }
@@ -225,6 +242,12 @@ function App() {
         "qtyNeed" in objToUpdate
           ? item.qtyNeed + objToUpdate.qtyNeed
           : item.qtyNeed;
+
+      const qbBackOrder =
+        "qbBackOrder" in objToUpdate
+          ? objToUpdate.qbBackOrder
+          : item.qbBackOrder;
+
       // const qtyNeed =
       //   qtyMisysNeed -
       //   (totQStk + totQWip + totQOrd + ordQty - endQty + Math.abs(tempQty));
@@ -238,6 +261,7 @@ function App() {
           tempQty,
           totQMisysNeed,
           qtyNeed,
+          qbBackOrder,
         };
 
         return true;
@@ -251,6 +275,8 @@ function App() {
       const totQOrd = "totQOrd" in objToUpdate ? objToUpdate.totQOrd : 0;
       const totQExcess =
         "totQExcess" in objToUpdate ? objToUpdate.totQExcess : 0;
+      const qbBackOrder =
+        "qbBackOrder" in objToUpdate ? objToUpdate.qbBackOrder : 0;
 
       masterItems.push({
         itemId,
@@ -265,6 +291,7 @@ function App() {
         qtyNeed: 0,
         totQExcess,
         topLevel: "false",
+        qbBackOrder,
       });
     }
   };
@@ -349,14 +376,22 @@ function App() {
     console.log("Transferring Items Data...");
     items.map((item) => {
       const { itemId, totQStk, totQWip, totQOrd } = item;
+      const qbFind = qbData.filter((qbItem) => qbItem.__EMPTY_2 === itemId);
+      const qbBackOrder = qbFind.length > 0 ? qbFind[0].Available : 0;
+      if (qbBackOrder !== 0) {
+        console.log(`${itemId} ${qbBackOrder}`);
+      }
       updateMasterItems({
         itemId,
         totQStk,
         totQWip,
         totQOrd,
         totQExcess: totQStk + totQWip + totQOrd,
+        qbBackOrder,
       });
     });
+
+    console.log(masterItems);
 
     console.log("Transferring Open Mo data");
     // items transfer mo qty
@@ -447,13 +482,30 @@ function App() {
     let parentItem = "";
     let options = [{ value: "ALL", label: "ALL" }];
 
-    filteredMasterItems.map((topItem, index) => {
-      console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
-      parentItem = topItem.itemId;
-      options.push({ value: parentItem, label: parentItem });
+    qbData.map((qbItem) => {
+      const onSalesOrder = qbItem["Available"];
+      console.log(`onSalesOrder ${onSalesOrder}`);
+      if (onSalesOrder < 0) {
+        parentItem = qbItem.__EMPTY_2;
+        options.push({ value: parentItem, label: parentItem });
+        const masterItem = filteredMasterItems.filter(
+          (item) => item.itemId === parentItem
+        );
+        const additionalQty = masterItem[0]
+          ? masterItem[0].ordQty - masterItem[0].endQty
+          : 0;
 
-      getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
+        getSubsMisysNeed(parentItem, 0, 0 - Number(onSalesOrder));
+      }
     });
+
+    // filteredMasterItems.map((topItem, index) => {
+    //   console.log(`Processing ${index + 1} of ${filteredMasterItems.length}`);
+    //   parentItem = topItem.itemId;
+    //   options.push({ value: parentItem, label: parentItem });
+
+    //   getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
+    // });
     setParentList(parentChild);
     setFatherOptions(options);
     console.log(`Finish`);
