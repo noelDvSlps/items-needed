@@ -252,6 +252,13 @@ function App() {
       //   qtyMisysNeed -
       //   (totQStk + totQWip + totQOrd + ordQty - endQty + Math.abs(tempQty));
 
+      const totalStock =
+        item.totQStk +
+        item.totQWip +
+        item.totQOrd +
+        ordQty -
+        endQty -
+        item.totQUsed;
       if (item.itemId === itemId) {
         masterItems[i] = {
           ...masterItems[i],
@@ -259,7 +266,12 @@ function App() {
           ordQty,
           endQty,
           tempQty,
-          totQMisysNeed,
+          totQMisysNeed:
+            qbBackOrder === 0
+              ? totQMisysNeed
+              : -qbBackOrder - totalStock < 0
+              ? 0
+              : -qbBackOrder - totalStock,
           qtyNeed,
           qbBackOrder,
         };
@@ -378,15 +390,14 @@ function App() {
       const { itemId, totQStk, totQWip, totQOrd } = item;
       const qbFind = qbData.filter((qbItem) => qbItem.__EMPTY_2 === itemId);
       const qbBackOrder = qbFind.length > 0 ? qbFind[0].Available : 0;
-      if (qbBackOrder !== 0) {
-        console.log(`${itemId} ${qbBackOrder}`);
-      }
+      const excess = totQStk + totQWip + totQOrd + qbBackOrder;
+
       updateMasterItems({
         itemId,
         totQStk,
         totQWip,
         totQOrd,
-        totQExcess: totQStk + totQWip + totQOrd,
+        totQExcess: excess,
         qbBackOrder,
       });
     });
@@ -399,11 +410,14 @@ function App() {
       const { ordQty, endQty } = mo;
       const itemId = mo.buildItem;
       const i = masterItems.filter((item) => item.itemId === itemId);
+
+      const excess = i[0].totQExcess + ordQty - endQty;
+
       updateMasterItems({
         itemId,
         ordQty,
         endQty,
-        totQExcess: i[0].totQExcess + ordQty - endQty,
+        totQExcess: excess,
       });
     });
 
@@ -475,9 +489,9 @@ function App() {
         getSubsMisysNeed(bom.partId, qtyNeed, qtyMo);
       });
     };
-    const filteredMasterItems = masterItems.filter(
-      (item) => item.topLevel === true && item.ordQty > 0
-    );
+    // const filteredMasterItems = masterItems.filter(
+    //   (item) => item.topLevel === true && item.ordQty > 0
+    // );
 
     let parentItem = "";
     let options = [{ value: "ALL", label: "ALL" }];
@@ -488,12 +502,6 @@ function App() {
       if (onSalesOrder < 0) {
         parentItem = qbItem.__EMPTY_2;
         options.push({ value: parentItem, label: parentItem });
-        const masterItem = filteredMasterItems.filter(
-          (item) => item.itemId === parentItem
-        );
-        const additionalQty = masterItem[0]
-          ? masterItem[0].ordQty - masterItem[0].endQty
-          : 0;
 
         getSubsMisysNeed(parentItem, 0, 0 - Number(onSalesOrder));
       }
@@ -852,7 +860,7 @@ function App() {
                               sortMasterList(key);
                             }}
                           >
-                            {key}
+                            {key === "totQUsed" ? "Allocated" : key}
                           </td>
                         );
                       }
@@ -883,12 +891,16 @@ function App() {
                                   color:
                                     (item[key3] > 0 &&
                                       key3 === "totQMisysNeed") ||
+                                    (item[key3] < 0 &&
+                                      key3 === "qbBackOrder") ||
                                     item["itemId"] === selectedFather
                                       ? "red"
                                       : "black",
                                   fontSize:
                                     (item[key3] > 0 &&
                                       key3 === "totQMisysNeed") ||
+                                    (item[key3] < 0 &&
+                                      key3 === "qbBackOrder") ||
                                     item["itemId"] === selectedFather
                                       ? "20px"
                                       : "16px",
@@ -897,7 +909,11 @@ function App() {
                                 {typeof item[key3] === "boolean"
                                   ? item[key3].toString()
                                   : typeof item[key3] === "number"
-                                  ? item[key3].toFixed(2)
+                                  ? item[key3].toFixed(2) < 0
+                                    ? key3 === "qbBackOrder"
+                                      ? Math.abs(item[key3]).toFixed(2)
+                                      : (0).toFixed(2)
+                                    : item[key3].toFixed(2)
                                   : item[key3]}
                               </td>
                             );
