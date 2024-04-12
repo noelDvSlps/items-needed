@@ -146,7 +146,10 @@ function App() {
           return item;
         });
         const qb2 = qb.filter((item) => {
-          return item.__EMPTY_2 !== undefined && item.Available < 0;
+          return (
+            item.__EMPTY_2 !== undefined &&
+            item["On Hand"] - item["On Sales Order"] < 0
+          );
         });
         console.log(qb2);
         setQbData(qb2);
@@ -389,7 +392,10 @@ function App() {
     items.map((item) => {
       const { itemId, totQStk, totQWip, totQOrd } = item;
       const qbFind = qbData.filter((qbItem) => qbItem.__EMPTY_2 === itemId);
-      const qbBackOrder = qbFind.length > 0 ? qbFind[0].Available : 0;
+      const qbBackOrder =
+        qbFind.length > 0
+          ? qbFind[0]["On Hand"] - qbFind[0]["On Sales Order"]
+          : 0;
       const excess = totQStk + totQWip + totQOrd + qbBackOrder;
 
       updateMasterItems({
@@ -497,7 +503,7 @@ function App() {
     let options = [{ value: "ALL", label: "ALL" }];
 
     qbData.map((qbItem) => {
-      const onSalesOrder = qbItem["Available"];
+      const onSalesOrder = qbItem["On Hand"] - qbItem["On Sales Order"];
       console.log(`onSalesOrder ${onSalesOrder}`);
       if (onSalesOrder < 0) {
         parentItem = qbItem.__EMPTY_2;
