@@ -6,6 +6,8 @@ import { uid } from "uid";
 import Modal from "react-modal";
 import { createManufacturingOrder } from "./api/manufacturingOrder/createManufacturingOrder";
 import { deleteManufacturingOrders } from "./api/manufacturingOrder/deleteManufacturingOrders";
+import { deleteWcsNeedItems } from "./api/wcsNeedItem/deleteWcsNeedItems";
+import { createWcsNeedItem } from "./api/wcsNeedItem/createWcsNeedItem";
 function App() {
   const customStyles = {
     content: {
@@ -545,6 +547,7 @@ function App() {
 
     setData(sortedData);
     setMasterList(sortedData);
+    console.log(sortedData);
     setLoading(false);
     setElementValue("lblMsg", "Finish");
     setTimeout(() => {
@@ -704,6 +707,39 @@ function App() {
     });
   };
 
+  const updateWcsNeedItems = async (needItems) => {
+    await deleteWcsNeedItems("ALL", "token");
+
+    needItems.map(async (needItem) => {
+      const {
+        itemId,
+        totQStk,
+        totQWip,
+        totQUsed,
+        totQOrd,
+        ordQty,
+        endQty,
+        totQMisysNeed,
+        totQExcess,
+        qbBackOrder,
+      } = needItem;
+
+      const a = await createWcsNeedItem({
+        item: itemId,
+        qbBackOrder,
+        stock: totQStk,
+        wip: totQWip,
+        purchase: totQOrd,
+        allocated: totQUsed,
+        openMoQty: ordQty - endQty,
+        need: totQMisysNeed,
+        excess: totQExcess,
+        createdAt: Date.now(),
+      });
+      console.log(a);
+    });
+  };
+
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
       <Modal
@@ -777,6 +813,7 @@ function App() {
             justifyContent: "space-between",
           }}
         >
+          <button onClick={() => updateWcsNeedItems(data)}> hello</button>
           {loading === false && (
             <button
               id="btn-Compute"
