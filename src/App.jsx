@@ -710,33 +710,35 @@ function App() {
   const updateWcsNeedItems = async (needItems) => {
     await deleteWcsNeedItems("ALL", "token");
 
-    needItems.map(async (needItem) => {
-      const {
-        itemId,
-        totQStk,
-        totQWip,
-        totQUsed,
-        totQOrd,
-        ordQty,
-        endQty,
-        totQMisysNeed,
-        totQExcess,
-        qbBackOrder,
-      } = needItem;
+    needItems.map(async (needItem, index) => {
+      setTimeout(async () => {
+        const {
+          itemId,
+          totQStk,
+          totQWip,
+          totQUsed,
+          totQOrd,
+          ordQty,
+          endQty,
+          totQMisysNeed,
+          totQExcess,
+          qbBackOrder,
+        } = needItem;
 
-      const a = await createWcsNeedItem({
-        item: itemId,
-        qbBackOrder,
-        stock: totQStk,
-        wip: totQWip,
-        purchase: totQOrd,
-        allocated: totQUsed,
-        openMoQty: ordQty - endQty,
-        need: totQMisysNeed,
-        excess: totQExcess,
-        createdAt: Date.now(),
-      });
-      console.log(a);
+        const a = await createWcsNeedItem({
+          item: itemId,
+          qbBackOrder,
+          stock: totQStk,
+          wip: totQWip,
+          purchase: totQOrd,
+          allocated: totQUsed,
+          openMoQty: ordQty - endQty,
+          need: totQMisysNeed,
+          excess: totQExcess,
+          createdAt: Date.now(),
+        });
+        console.log(a);
+      }, index * 10);
     });
   };
 

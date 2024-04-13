@@ -12,7 +12,6 @@ export const createWcsNeedItem = ({
   excess,
   createdAt,
 }) => {
-  console.log(item);
   return fetch(API_CONFIG.baseUrl + "/wcsNeedItems", {
     headers: {
       "Content-Type": "application/json",
