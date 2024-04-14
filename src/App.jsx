@@ -10,6 +10,7 @@ import { deleteWcsNeedItems } from "./api/wcsNeedItem/deleteWcsNeedItems";
 import { createWcsNeedItem } from "./api/wcsNeedItem/createWcsNeedItem";
 import { deleteAxsNeedItems } from "./api/axsNeedItem/deleteAxsNeedItems";
 import { createAxsNeedItem } from "./api/axsNeedItem/createAxsNeedItem";
+import { updateItemsCount } from "./api/itemCount/updateItemsCount";
 function App() {
   const customStyles = {
     content: {
@@ -711,6 +712,11 @@ function App() {
   };
 
   const updateWcsNeedItems = async (needItems) => {
+    await updateItemsCount(
+      "661c53f779d35b95b6615a15",
+      { itemsCount: needItems.length },
+      "token"
+    );
     await deleteWcsNeedItems("ALL", "token");
 
     needItems.map(async (needItem, index) => {
@@ -745,6 +751,11 @@ function App() {
     });
   };
   const updateAxsNeedItems = async (needItems) => {
+    await updateItemsCount(
+      "661c53fd79d35b95b6615a16",
+      { itemsCount: needItems.length },
+      "token"
+    );
     await deleteAxsNeedItems("ALL", "token");
 
     needItems.map(async (needItem, index) => {
