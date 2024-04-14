@@ -1,6 +1,6 @@
 import { API_CONFIG } from "../config";
 
-export const createWcsNeedItem = ({
+export const createAxsNeedItem = ({
   item,
   qbBackOrder,
   need,
@@ -12,7 +12,7 @@ export const createWcsNeedItem = ({
   openMoQty,
   createdAt,
 }) => {
-  return fetch(API_CONFIG.baseUrl + "/wcsNeedItems", {
+  return fetch(API_CONFIG.baseUrl + "/axsNeedItems", {
     headers: {
       "Content-Type": "application/json",
     },

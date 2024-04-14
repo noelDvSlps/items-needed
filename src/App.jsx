@@ -8,6 +8,8 @@ import { createManufacturingOrder } from "./api/manufacturingOrder/createManufac
 import { deleteManufacturingOrders } from "./api/manufacturingOrder/deleteManufacturingOrders";
 import { deleteWcsNeedItems } from "./api/wcsNeedItem/deleteWcsNeedItems";
 import { createWcsNeedItem } from "./api/wcsNeedItem/createWcsNeedItem";
+import { deleteAxsNeedItems } from "./api/axsNeedItem/deleteAxsNeedItems";
+import { createAxsNeedItem } from "./api/axsNeedItem/createAxsNeedItem";
 function App() {
   const customStyles = {
     content: {
@@ -741,6 +743,40 @@ function App() {
       }, index * 10);
     });
   };
+  const updateAxsNeedItems = async (needItems) => {
+    await deleteAxsNeedItems("ALL", "token");
+
+    needItems.map(async (needItem, index) => {
+      setTimeout(async () => {
+        const {
+          itemId,
+          totQStk,
+          totQWip,
+          totQUsed,
+          totQOrd,
+          ordQty,
+          endQty,
+          totQMisysNeed,
+          totQExcess,
+          qbBackOrder,
+        } = needItem;
+
+        const a = await createAxsNeedItem({
+          item: itemId,
+          qbBackOrder,
+          stock: totQStk,
+          wip: totQWip,
+          purchase: totQOrd,
+          allocated: totQUsed,
+          openMoQty: ordQty - endQty,
+          need: totQMisysNeed,
+          excess: totQExcess,
+          createdAt: Date.now(),
+        });
+        console.log(a);
+      }, index * 10);
+    });
+  };
 
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
@@ -815,7 +851,8 @@ function App() {
             justifyContent: "space-between",
           }}
         >
-          <button onClick={() => updateWcsNeedItems(data)}> hello</button>
+          <button onClick={() => updateWcsNeedItems(data)}> wcs</button>
+          <button onClick={() => updateAxsNeedItems(data)}> axs</button>
           {loading === false && (
             <button
               id="btn-Compute"
