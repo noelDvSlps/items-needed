@@ -96,7 +96,7 @@ function App() {
     var workbook = XLSX.utils.table_to_book(table_elt);
 
     // Process Data (add a new row)
-    var ws = workbook.Sheets["qbData1"];
+    var ws = workbook.Sheets["Sheet1"];
     XLSX.utils.sheet_add_aoa(ws, [["Created " + new Date().toISOString()]], {
       origin: -1,
     });
@@ -144,7 +144,7 @@ function App() {
     promise.then((d) => {
       const tableName = getElementValue("label");
 
-      if (tableName === "Sheet1") {
+      if (tableName === "qbData1") {
         const qb = d.map((item) => {
           const itemNumber = item.__EMPTY_2;
           const itemNumber2 = itemNumber ? itemNumber.split(" ") : [undefined];
