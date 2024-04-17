@@ -96,7 +96,7 @@ function App() {
     var workbook = XLSX.utils.table_to_book(table_elt);
 
     // Process Data (add a new row)
-    var ws = workbook.Sheets["Sheet1"];
+    var ws = workbook.Sheets["qbData1"];
     XLSX.utils.sheet_add_aoa(ws, [["Created " + new Date().toISOString()]], {
       origin: -1,
     });
