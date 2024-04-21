@@ -28,6 +28,7 @@ function App() {
   };
   Modal.setAppElement("#root");
   const [modalIsOpen, setIsOpen] = useState(false);
+  const [orgId, setOrgId] = useState("");
 
   function openModal() {
     setIsOpen(true);
@@ -58,6 +59,8 @@ function App() {
   const [qbData, setQbData] = useState([]);
   const [qbData2, setQbData2] = useState([]);
   const [masterList, setMasterList] = useState([]);
+
+  const [msg, setMsg] = useState("msg");
 
   let topLevelWhereUse = false;
 
@@ -139,6 +142,16 @@ function App() {
         const bufferArray = e.target.result;
 
         const wb = XLSX.read(bufferArray, { type: "buffer" });
+
+        const firstSheetName = wb.SheetNames[0];
+        const firstWs = wb.Sheets[firstSheetName];
+        const sourceData = XLSX.utils.sheet_to_json(firstWs);
+        if (sourceData.length > 0) {
+          const keys = Object.keys(sourceData[0]);
+          if (keys.includes("orgId")) {
+            setOrgId(sourceData[0].orgId);
+          }
+        }
 
         const sheetIndex = 1;
 
@@ -482,7 +495,7 @@ function App() {
 
     console.log("Getting Items without bom where used or w/o mo where used");
     // segregate topLevels
-    masterItems.map((item, index) => {
+    masterItems.map((item) => {
       const topLevel = !isTopLevelWhereUse(item.itemId);
       // console.log(`Processing ${index + 1} of ${masterItems.length}`);
       updateMasterItems({ itemId: item.itemId, topLevel });
@@ -499,7 +512,7 @@ function App() {
         return;
       }
       // step 2. Iterate all the subs
-      filteredBoms.map((bom, index) => {
+      filteredBoms.map((bom) => {
         // console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
         // 2.1 get qty of sub misys need
         const qtyMisysNeed =
@@ -579,19 +592,7 @@ function App() {
     //   getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
     // });
     setParentList(parentChild);
-    const filteredParentChild = parentChild.filter((item) => item.qtyNeed > 0);
-    const delData = await deleteNeedBreakdowns("ALL", "token");
-    console.log(delData);
-    filteredParentChild.map(async (item, index) => {
-      setTimeout(async () => {
-        const res = await createNeedBreakdown({
-          parentItem: item.parent,
-          childItem: item.child,
-          qtyNeed: item.qtyNeed,
-        });
-        console.log(res);
-      }, index * 10);
-    });
+
     setFatherOptions(options);
 
     console.log(`Finish`);
@@ -685,13 +686,12 @@ function App() {
   };
   // API
   const updateProcesses = async (table2) => {
-    alert(`Delete: ${del}`);
     if (del === true) {
       await deleteManufacturingOrders("ALL", "token");
     }
     setDel(!del);
     // map table 1
-    table1.map(async (item, index) => {
+    table1.map(async (item) => {
       // check if exist in table 2
       const filteredTable2 = table2.filter((mo) => mo.mohId === item.mohId);
 
@@ -782,7 +782,7 @@ function App() {
     );
     await deleteWcsNeedItems("ALL", "token");
 
-    needItems.map(async (needItem, index) => {
+    await needItems.map(async (needItem, index) => {
       setTimeout(async () => {
         const {
           itemId,
@@ -809,6 +809,22 @@ function App() {
           excess: totQExcess,
           createdAt: Date.now(),
         });
+        console.log(a);
+      }, index * 10);
+    });
+
+    const filteredParentChild = parentList.filter((item) => item.qtyNeed > 0);
+    const delData = await deleteNeedBreakdowns("WCS", "token");
+    console.log(delData);
+    filteredParentChild.map(async (item, index) => {
+      setTimeout(async () => {
+        const res = await createNeedBreakdown({
+          parentItem: item.parent,
+          childItem: item.child,
+          qtyNeed: item.qtyNeed,
+          orgId,
+        });
+        console.log(res);
       }, index * 10);
     });
   };
@@ -820,7 +836,7 @@ function App() {
     );
     await deleteAxsNeedItems("ALL", "token");
 
-    needItems.map(async (needItem, index) => {
+    await needItems.map(async (needItem, index) => {
       setTimeout(async () => {
         const {
           itemId,
@@ -834,8 +850,8 @@ function App() {
           totQExcess,
           qbBackOrder,
         } = needItem;
-
-        const a = await createAxsNeedItem({
+        setMsg(itemId);
+        await createAxsNeedItem({
           item: itemId,
           qbBackOrder,
           stock: totQStk,
@@ -849,10 +865,26 @@ function App() {
         });
       }, index * 10);
     });
+
+    const filteredParentChild = parentList.filter((item) => item.qtyNeed > 0);
+    const delData = await deleteNeedBreakdowns("AXS", "token");
+    console.log(delData);
+    filteredParentChild.map(async (item, index) => {
+      setTimeout(async () => {
+        const res = await createNeedBreakdown({
+          parentItem: item.parent,
+          childItem: item.child,
+          qtyNeed: item.qtyNeed,
+          orgId,
+        });
+        console.log(res);
+      }, index * 10);
+    });
   };
 
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
+      <div> {msg}</div>
       <input
         onChange={(e) => setPassword(e.target.value)}
         value={password}

@@ -4,6 +4,7 @@ export const createNeedBreakdown = ({
   parentItem,
   childItem,
   qtyNeed,
+  orgId,
   createdAt,
 }) => {
   return fetch(API_CONFIG.baseUrl + "/needBreakdowns", {
@@ -15,6 +16,7 @@ export const createNeedBreakdown = ({
       parentItem,
       childItem,
       qtyNeed,
+      orgId,
       createdAt,
     }),
   })
