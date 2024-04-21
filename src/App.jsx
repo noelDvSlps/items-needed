@@ -11,6 +11,8 @@ import { createWcsNeedItem } from "./api/wcsNeedItem/createWcsNeedItem";
 import { deleteAxsNeedItems } from "./api/axsNeedItem/deleteAxsNeedItems";
 import { createAxsNeedItem } from "./api/axsNeedItem/createAxsNeedItem";
 import { updateItemsCount } from "./api/itemCount/updateItemsCount";
+import { deleteNeedBreakdowns } from "./api/needBreakdown/deleteNeedBreakdowns";
+import { createNeedBreakdown } from "./api/needBreakdown/createNeedBreakdown";
 function App() {
   const customStyles = {
     content: {
@@ -54,6 +56,7 @@ function App() {
 
   const [data, setData] = useState([]);
   const [qbData, setQbData] = useState([]);
+  const [qbData2, setQbData2] = useState([]);
   const [masterList, setMasterList] = useState([]);
 
   let topLevelWhereUse = false;
@@ -117,6 +120,16 @@ function App() {
 
   const tableRef = useRef(null);
 
+  const excludedItem = [
+    "Repair",
+    "Assembly",
+    "Excise",
+    "Shipping",
+    "Prototype",
+    "Engineer",
+    "Laser",
+  ];
+
   const readExcel = (file) => {
     const promise = new Promise((resolve, reject) => {
       const fileReader = new FileReader();
@@ -157,8 +170,42 @@ function App() {
             item["On Hand"] - item["On Sales Order"] < 0
           );
         });
-        console.log(qb2);
+        // console.log(qb2);
         setQbData(qb2);
+      }
+      let prevVal = undefined;
+
+      if (tableName === "qbData2") {
+        const qb = d.map((item) => {
+          const arrString = item.__EMPTY_2 ? item.__EMPTY_2.split(" ") : [""];
+
+          const itemNumber = item.__EMPTY_2
+            ? arrString[0] === "Total"
+              ? undefined
+              : prevVal
+            : prevVal;
+          prevVal = item.__EMPTY_2
+            ? arrString[0] === "Total"
+              ? undefined
+              : arrString[0]
+            : prevVal;
+          if (itemNumber) {
+            var excluded = false;
+            for (var i = 0; i < excludedItem.length; i++) {
+              if (itemNumber.includes(excludedItem[i])) {
+                excluded = true;
+                break;
+              }
+            }
+            return !excluded
+              ? { Item: itemNumber, ...item }
+              : { Item: undefined };
+          }
+          return { Item: undefined };
+        });
+
+        // console.log(qb);
+        setQbData2(qb);
       }
       if (tableName === "MIMOH") {
         setTable1(d);
@@ -196,7 +243,7 @@ function App() {
           .filter((item) => item !== undefined);
 
         console.log("sortedTable2");
-        console.log(sortedTable2);
+        // console.log(sortedTable2);
         setTable2(sortedTable2);
         setFields(table2Fields);
         updateProcesses(sortedTable2);
@@ -217,7 +264,7 @@ function App() {
         setFields(bomsFields);
       }
       if (tableName === "MIITEM") {
-        console.log(d);
+        // console.log(d);
         setItems(d);
         setFields(itemsFields);
       }
@@ -390,7 +437,7 @@ function App() {
     return data;
   };
 
-  const handleCompute = () => {
+  const handleCompute = async () => {
     let openMos = [];
     masterItems = [];
     // items transfer stocks
@@ -437,7 +484,7 @@ function App() {
     // segregate topLevels
     masterItems.map((item, index) => {
       const topLevel = !isTopLevelWhereUse(item.itemId);
-      console.log(`Processing ${index + 1} of ${masterItems.length}`);
+      // console.log(`Processing ${index + 1} of ${masterItems.length}`);
       updateMasterItems({ itemId: item.itemId, topLevel });
     });
 
@@ -453,7 +500,7 @@ function App() {
       }
       // step 2. Iterate all the subs
       filteredBoms.map((bom, index) => {
-        console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
+        // console.log(`Processing ${index + 1} of ${filteredBoms.length}`);
         // 2.1 get qty of sub misys need
         const qtyMisysNeed =
           qty + upperMoQty < 0 ? 0 : (+qty + +upperMoQty) * bom.qty;
@@ -497,10 +544,15 @@ function App() {
         } else {
           qtyMo = 0;
         }
-        parentChild.push({ parent: parentItem, child: bom.partId });
+
+        if (bom.partId.indexOf("MA-") === -1) {
+          parentChild.push({ parent: parentItem, child: bom.partId, qtyNeed });
+        }
+
         getSubsMisysNeed(bom.partId, qtyNeed, qtyMo);
       });
     };
+
     // const filteredMasterItems = masterItems.filter(
     //   (item) => item.topLevel === true && item.ordQty > 0
     // );
@@ -527,8 +579,23 @@ function App() {
     //   getSubsMisysNeed(topItem.itemId, 0, topItem.ordQty - topItem.endQty);
     // });
     setParentList(parentChild);
+    const filteredParentChild = parentChild.filter((item) => item.qtyNeed > 0);
+    const delData = await deleteNeedBreakdowns("ALL", "token");
+    console.log(delData);
+    filteredParentChild.map(async (item, index) => {
+      setTimeout(async () => {
+        const res = await createNeedBreakdown({
+          parentItem: item.parent,
+          childItem: item.child,
+          qtyNeed: item.qtyNeed,
+        });
+        console.log(res);
+      }, index * 10);
+    });
     setFatherOptions(options);
+
     console.log(`Finish`);
+    console.log(parentChild);
     return true;
   };
 
@@ -551,7 +618,7 @@ function App() {
 
     setData(sortedData);
     setMasterList(sortedData);
-    console.log(sortedData);
+    // console.log(sortedData);
     setLoading(false);
     setElementValue("lblMsg", "Finish");
     setTimeout(() => {
@@ -625,11 +692,8 @@ function App() {
     setDel(!del);
     // map table 1
     table1.map(async (item, index) => {
-      console.log(index);
       // check if exist in table 2
       const filteredTable2 = table2.filter((mo) => mo.mohId === item.mohId);
-
-      // console.log("filteredTable2");
 
       if (filteredTable2.length !== 0) {
         const {
@@ -646,7 +710,6 @@ function App() {
         } = filteredTable2[0];
 
         const buildItem = getBuildItem(mohId);
-        console.log(buildItem);
         const descr = getDescr(buildItem);
         const locId = getLocId(mohId);
         const dueDate = Date.parse(getDueDate(mohId));
@@ -746,7 +809,6 @@ function App() {
           excess: totQExcess,
           createdAt: Date.now(),
         });
-        console.log(a);
       }, index * 10);
     });
   };
@@ -785,7 +847,6 @@ function App() {
           excess: totQExcess,
           createdAt: Date.now(),
         });
-        console.log(a);
       }, index * 10);
     });
   };
