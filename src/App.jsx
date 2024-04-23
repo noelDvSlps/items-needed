@@ -586,12 +586,9 @@ function App() {
         console.log(parentItem);
         console.log(i);
         options.push({ value: parentItem, label: parentItem });
+        const parentQty = 0 - Number(onSalesOrder) - additionalQty;
 
-        getSubsMisysNeed(
-          parentItem,
-          0,
-          0 - Number(onSalesOrder) + additionalQty
-        );
+        getSubsMisysNeed(parentItem, 0, parentQty < 0 ? 0 : parentQty);
       }
     });
 
