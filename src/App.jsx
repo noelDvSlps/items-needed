@@ -581,9 +581,14 @@ function App() {
       console.log(`onSalesOrder ${onSalesOrder}`);
       if (onSalesOrder < 0) {
         parentItem = qbItem.__EMPTY_2;
+        const i = items.filter((item) => item.itemId === parentItem);
         options.push({ value: parentItem, label: parentItem });
 
-        getSubsMisysNeed(parentItem, 0, 0 - Number(onSalesOrder));
+        getSubsMisysNeed(
+          parentItem,
+          0,
+          0 - Number(onSalesOrder) + i[0].totQStk + i[0].totQOrd
+        );
       }
     });
 
