@@ -13,6 +13,8 @@ import { createAxsNeedItem } from "./api/axsNeedItem/createAxsNeedItem";
 import { updateItemsCount } from "./api/itemCount/updateItemsCount";
 import { deleteNeedBreakdowns } from "./api/needBreakdown/deleteNeedBreakdowns";
 import { createNeedBreakdown } from "./api/needBreakdown/createNeedBreakdown";
+import { deleteShippings } from "./api/shipping/deleteShippings";
+import { createShipping } from "./api/shipping/createShipping";
 function App() {
   const customStyles = {
     content: {
@@ -217,8 +219,9 @@ function App() {
           return { Item: undefined };
         });
 
-        // console.log(qb);
-        setQbData2(qb);
+        const filteredQb = qb.filter((qbItem) => qbItem.Item !== undefined);
+        console.log(filteredQb);
+        setQbData2(filteredQb);
       }
       if (tableName === "MIMOH") {
         setTable1(d);
@@ -827,7 +830,30 @@ function App() {
         console.log(res);
       }, index * 10);
     });
+
+    await deleteShippings(orgId, "token");
+    await qbData2.map(async (qbItem, index) => {
+      setTimeout(async () => {
+        const { Item, Qty, BackOrdered, Invoiced, Name, Num } = qbItem;
+        const dt = convertDateExcel(qbItem["Ship Date"]);
+
+        const a = await createShipping({
+          item: Item,
+          qty: Qty,
+          backOrdered: BackOrdered,
+          invoiced: Invoiced,
+          name: Name,
+          num: Num,
+          po: qbItem["P. O. #"],
+          shipDate: dt,
+          createdAt: Date.now(),
+          orgId,
+        });
+        console.log(a);
+      }, index * 10);
+    });
   };
+
   const updateAxsNeedItems = async (needItems) => {
     await updateItemsCount(
       "661c53fd79d35b95b6615a16",
