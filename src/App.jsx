@@ -584,9 +584,10 @@ function App() {
         const i = items.filter((item) => item.itemId === parentItem);
         const additionalQty = i.length > 0 ? i[0].totQStk + i[0].totQOrd : 0;
         console.log(parentItem);
-        console.log(i);
+
         options.push({ value: parentItem, label: parentItem });
-        const parentQty = 0 - Number(onSalesOrder) - additionalQty;
+        let parentQty = 0 - Number(onSalesOrder);
+        parentQty = parentQty - additionalQty;
 
         getSubsMisysNeed(parentItem, 0, parentQty < 0 ? 0 : parentQty);
       }
