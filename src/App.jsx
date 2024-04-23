@@ -582,12 +582,15 @@ function App() {
       if (onSalesOrder < 0) {
         parentItem = qbItem.__EMPTY_2;
         const i = items.filter((item) => item.itemId === parentItem);
+        const additionalQty = i.length > 0 ? i[0].totQStk + i[0].totQOrd : 0;
+        console.log(parentItem);
+        console.log(i);
         options.push({ value: parentItem, label: parentItem });
 
         getSubsMisysNeed(
           parentItem,
           0,
-          0 - Number(onSalesOrder) + i[0].totQStk + i[0].totQOrd
+          0 - Number(onSalesOrder) + additionalQty
         );
       }
     });
