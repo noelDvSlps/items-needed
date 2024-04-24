@@ -848,8 +848,7 @@ function App() {
           totQExcess,
           qbBackOrder,
         } = needItem;
-        setMsg(itemId);
-        console.log(itemId);
+
         const a = await createWcsNeedItem({
           item: itemId,
           qbBackOrder,
