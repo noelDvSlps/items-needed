@@ -9,7 +9,7 @@ export const createShipping = ({
   num,
   po,
   shipDate,
-  modifiedShipDate,
+  memo,
   createdAt,
   orgId,
 }) => {
@@ -27,7 +27,7 @@ export const createShipping = ({
       num,
       po,
       shipDate,
-      modifiedShipDate,
+      memo,
       createdAt,
       orgId,
     }),

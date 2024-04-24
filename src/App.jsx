@@ -787,7 +787,7 @@ function App() {
     await deleteShippings(orgId, "token");
     qbData2.map(async (qbItem, index) => {
       setTimeout(async () => {
-        const { Item, Qty, BackOrdered, Invoiced, Name, Num } = qbItem;
+        const { Item, Qty, BackOrdered, Invoiced, Name, Num, Memo } = qbItem;
         const dt = convertDateExcel(qbItem["Ship Date"]);
 
         const a = await createShipping({
@@ -799,6 +799,7 @@ function App() {
           num: Num,
           po: qbItem["P. O. #"],
           shipDate: dt,
+          memo: Memo,
           createdAt: Date.now(),
           orgId,
         });
