@@ -15,6 +15,8 @@ import { deleteNeedBreakdowns } from "./api/needBreakdown/deleteNeedBreakdowns";
 import { createNeedBreakdown } from "./api/needBreakdown/createNeedBreakdown";
 import { deleteShippings } from "./api/shipping/deleteShippings";
 import { createShipping } from "./api/shipping/createShipping";
+import { deleteQbItems } from "./api/qbItem/deleteQbItems";
+import { createQbItem } from "./api/qbItem/createQbItem";
 function App() {
   const customStyles = {
     content: {
@@ -185,7 +187,7 @@ function App() {
             item["On Hand"] - item["On Sales Order"] < 0
           );
         });
-        // console.log(qb2);
+        console.log(qb2);
         setQbData(qb2);
       }
       let prevVal = undefined;
@@ -783,6 +785,23 @@ function App() {
     });
   };
 
+  const updateQbItems = async () => {
+    await deleteQbItems(orgId, "token");
+    qbData.map(async (qbItem, index) => {
+      setTimeout(async () => {
+        const a = await createQbItem({
+          item: qbItem.__EMPTY_2,
+          onHand: qbItem["On Hand"],
+          onSalesOrder: qbItem["On Sales Order"],
+          available: qbItem.Available,
+          createdAt: Date.now(),
+          orgId,
+        });
+        console.log(a);
+      }, index * 10);
+    });
+  };
+
   const updateShipping = async () => {
     await deleteShippings(orgId, "token");
     qbData2.map(async (qbItem, index) => {
@@ -829,7 +848,8 @@ function App() {
           totQExcess,
           qbBackOrder,
         } = needItem;
-
+        setMsg(itemId);
+        console.log(itemId);
         const a = await createWcsNeedItem({
           item: itemId,
           qbBackOrder,
@@ -862,6 +882,7 @@ function App() {
     });
 
     updateShipping();
+    updateQbItems();
   };
 
   const updateAxsNeedItems = async (needItems) => {
@@ -917,6 +938,7 @@ function App() {
       }, index * 10);
     });
     updateShipping();
+    updateQbItems();
   };
 
   return (
