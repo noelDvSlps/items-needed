@@ -783,6 +783,29 @@ function App() {
     });
   };
 
+  const updateShipping = async () => {
+    await deleteShippings(orgId, "token");
+    qbData2.map(async (qbItem, index) => {
+      setTimeout(async () => {
+        const { Item, Qty, BackOrdered, Invoiced, Name, Num } = qbItem;
+        const dt = convertDateExcel(qbItem["Ship Date"]);
+
+        const a = await createShipping({
+          item: Item,
+          qty: Qty,
+          backOrdered: BackOrdered,
+          invoiced: Invoiced,
+          name: Name,
+          num: Num,
+          po: qbItem["P. O. #"],
+          shipDate: dt,
+          createdAt: Date.now(),
+          orgId,
+        });
+        console.log(a);
+      }, index * 10);
+    });
+  };
   const updateWcsNeedItems = async (needItems) => {
     await updateItemsCount(
       "661c53f779d35b95b6615a15",
@@ -837,27 +860,7 @@ function App() {
       }, index * 10);
     });
 
-    await deleteShippings(orgId, "token");
-    await qbData2.map(async (qbItem, index) => {
-      setTimeout(async () => {
-        const { Item, Qty, BackOrdered, Invoiced, Name, Num } = qbItem;
-        const dt = convertDateExcel(qbItem["Ship Date"]);
-
-        const a = await createShipping({
-          item: Item,
-          qty: Qty,
-          backOrdered: BackOrdered,
-          invoiced: Invoiced,
-          name: Name,
-          num: Num,
-          po: qbItem["P. O. #"],
-          shipDate: dt,
-          createdAt: Date.now(),
-          orgId,
-        });
-        console.log(a);
-      }, index * 10);
-    });
+    updateShipping();
   };
 
   const updateAxsNeedItems = async (needItems) => {
@@ -912,6 +915,7 @@ function App() {
         console.log(res);
       }, index * 10);
     });
+    updateShipping();
   };
 
   return (
