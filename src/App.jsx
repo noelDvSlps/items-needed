@@ -171,14 +171,35 @@ function App() {
       fileReader.onerror = reject;
     });
 
-    promise.then((d) => {
+    promise.then(async (d) => {
       const tableName = getElementValue("label");
 
       if (tableName === "qbData1") {
-        const qb = d.map((item) => {
+        await deleteQbItems(orgId, "token");
+        const qb = d.map((item, index) => {
           const itemNumber = item.__EMPTY_2;
           const itemNumber2 = itemNumber ? itemNumber.split(" ") : [undefined];
           item.__EMPTY_2 = itemNumber2[0];
+          const c = index + 1;
+
+          if (
+            item.__EMPTY_2 !== undefined &&
+            (item["On Sales Order"] > 0 || item["On Hand"] > 0)
+          ) {
+            setTimeout(async () => {
+              const res = await createQbItem({
+                item: item.__EMPTY_2,
+                onHand: item["On Hand"],
+                onSalesOrder: item["On Sales Order"],
+                available: item["On Hand"] - item["On Sales Order"],
+                createdAt: Date.now(),
+                orgId,
+              });
+              console.log(`${c} of ${d.length}`);
+              console.log(res);
+            }, index * 10);
+          }
+
           return item;
         });
         const qb2 = qb.filter((item) => {
@@ -881,7 +902,7 @@ function App() {
     });
 
     updateShipping();
-    updateQbItems();
+    // updateQbItems();
   };
 
   const updateAxsNeedItems = async (needItems) => {
@@ -937,7 +958,7 @@ function App() {
       }, index * 10);
     });
     updateShipping();
-    updateQbItems();
+    // updateQbItems();
   };
 
   return (
