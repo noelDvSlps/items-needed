@@ -17,6 +17,8 @@ import { deleteShippings } from "./api/shipping/deleteShippings";
 import { createShipping } from "./api/shipping/createShipping";
 import { deleteQbItems } from "./api/qbItem/deleteQbItems";
 import { createQbItem } from "./api/qbItem/createQbItem";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { ProgressBar } from "react-bootstrap";
 function App() {
   const customStyles = {
     content: {
@@ -61,10 +63,12 @@ function App() {
 
   const [data, setData] = useState([]);
   const [qbData, setQbData] = useState([]);
+  const [qbData1, setQbData1] = useState([]);
   const [qbData2, setQbData2] = useState([]);
   const [masterList, setMasterList] = useState([]);
 
   const [msg, setMsg] = useState("msg");
+  const [pBarNum, setPBarNum] = useState(0);
 
   let topLevelWhereUse = false;
 
@@ -175,7 +179,8 @@ function App() {
       const tableName = getElementValue("label");
 
       if (tableName === "qbData1") {
-        await deleteQbItems(orgId, "token");
+        let tempArray = [];
+        // await deleteQbItems(orgId, "token");
         const qb = d.map((item, index) => {
           const itemNumber = item.__EMPTY_2;
           const itemNumber2 = itemNumber ? itemNumber.split(" ") : [undefined];
@@ -186,22 +191,32 @@ function App() {
             item.__EMPTY_2 !== undefined &&
             (item["On Sales Order"] > 0 || item["On Hand"] > 0)
           ) {
-            setTimeout(async () => {
-              const res = await createQbItem({
-                item: item.__EMPTY_2,
-                onHand: item["On Hand"],
-                onSalesOrder: item["On Sales Order"],
-                available: item["On Hand"] - item["On Sales Order"],
-                createdAt: Date.now(),
-                orgId,
-              });
-              console.log(`${c} of ${d.length}`);
-              console.log(res);
-            }, index * 10);
+            tempArray.push({
+              item: item.__EMPTY_2,
+              onHand: item["On Hand"],
+              onSalesOrder: item["On Sales Order"],
+              available: item["On Hand"] - item["On Sales Order"],
+              createdAt: Date.now(),
+              orgId,
+            });
+            // setTimeout(async () => {
+            //   const res = await createQbItem({
+            //     item: item.__EMPTY_2,
+            //     onHand: item["On Hand"],
+            //     onSalesOrder: item["On Sales Order"],
+            //     available: item["On Hand"] - item["On Sales Order"],
+            //     createdAt: Date.now(),
+            //     orgId,
+            //   });
+            //   console.log(`${c} of ${d.length}`);
+            //   console.log(res);
+            // }, index * 10);
           }
 
           return item;
         });
+        console.log(tempArray);
+        setQbData1(tempArray);
         const qb2 = qb.filter((item) => {
           return (
             item.__EMPTY_2 !== undefined &&
@@ -847,43 +862,88 @@ function App() {
       }, index * 10);
     });
   };
+
+  const addWcsNeedItems = (num = 0) => {
+    const {
+      itemId,
+      totQStk,
+      totQWip,
+      totQUsed,
+      totQOrd,
+      ordQty,
+      endQty,
+      totQMisysNeed,
+      totQExcess,
+      qbBackOrder,
+    } = data[num];
+    return createWcsNeedItem({
+      item: itemId,
+      qbBackOrder,
+      stock: totQStk,
+      wip: totQWip,
+      purchase: totQOrd,
+      allocated: totQUsed,
+      openMoQty: ordQty - endQty,
+      need: totQMisysNeed,
+      excess: totQExcess,
+      createdAt: Date.now(),
+    }).then((res) => {
+      num = num + 1;
+      setMsg(res.data.item);
+      setPBarNum((num / data.length) * 100);
+      console.log(res);
+      if (num < data.length) {
+        addWcsNeedItems(num);
+      } else {
+        setPBarNum(0);
+        deleteQbItems(orgId, "token").then((res) => {
+          console.log("deleteQbItems");
+          console.log(res);
+          addQbData1();
+        });
+      }
+    });
+  };
+
+  const addQbData1 = (num = 0) => {
+    const { item, onHand, onSalesOrder, available, createdAt, orgId } =
+      qbData1[num];
+    return createQbItem({
+      item,
+      onHand,
+      onSalesOrder,
+      available,
+      createdAt,
+      orgId,
+    }).then((res) => {
+      num = num + 1;
+      setMsg(`QB ${res.data.item}`);
+      console.log(res);
+      // setMsg(num);
+      setPBarNum((num / qbData1.length) * 100);
+      console.log(res);
+      if (num < qbData1.length) {
+        addQbData1(num);
+      } else {
+        setLoading(false);
+        setPBarNum(0);
+      }
+    });
+  };
+
   const updateWcsNeedItems = async (needItems) => {
+    console.log("noel");
+    setLoading(true);
+
     await updateItemsCount(
       "661c53f779d35b95b6615a15",
       { itemsCount: needItems.length },
       "token"
     );
-    await deleteWcsNeedItems("ALL", "token");
 
-    await needItems.map(async (needItem, index) => {
-      setTimeout(async () => {
-        const {
-          itemId,
-          totQStk,
-          totQWip,
-          totQUsed,
-          totQOrd,
-          ordQty,
-          endQty,
-          totQMisysNeed,
-          totQExcess,
-          qbBackOrder,
-        } = needItem;
-
-        const a = await createWcsNeedItem({
-          item: itemId,
-          qbBackOrder,
-          stock: totQStk,
-          wip: totQWip,
-          purchase: totQOrd,
-          allocated: totQUsed,
-          openMoQty: ordQty - endQty,
-          need: totQMisysNeed,
-          excess: totQExcess,
-          createdAt: Date.now(),
-        });
-        console.log(a);
-      }, index * 10);
+    deleteWcsNeedItems("ALL", "token").then((res) => {
+      console.log(res);
+      addWcsNeedItems();
     });
 
     const filteredParentChild = parentList.filter((item) => item.qtyNeed > 0);
@@ -902,7 +962,6 @@ function App() {
     });
 
     updateShipping();
-    // updateQbItems();
   };
 
   const updateAxsNeedItems = async (needItems) => {
@@ -964,6 +1023,8 @@ function App() {
   return (
     <div style={{ width: "100%", maxHeight: "100vh" }}>
       <div> {msg}</div>
+      <ProgressBar animated now={pBarNum} />
+
       <input
         onChange={(e) => setPassword(e.target.value)}
         value={password}
