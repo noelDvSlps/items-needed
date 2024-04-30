@@ -58,7 +58,6 @@ function App() {
   const [table1, setTable1] = useState([]);
   const [table2, setTable2] = useState([]);
   const [boms, setBoms] = useState([]);
-  const [password, setPassword] = useState("");
   const refSort = useRef({ key: "totQMisysNeed", ascending: false });
 
   const [data, setData] = useState([]);
@@ -1007,11 +1006,6 @@ function App() {
       <div> {msg}</div>
       <ProgressBar animated now={pBarNum} />
 
-      <input
-        onChange={(e) => setPassword(e.target.value)}
-        value={password}
-        type="password"
-      ></input>
       <Modal
         isOpen={modalIsOpen}
         onAfterOpen={afterOpenModal}
@@ -1073,12 +1067,8 @@ function App() {
         </div>
       )}
       <div>
-        {password === "wcs12345" && (
-          <button onClick={() => updateWcsNeedItems(data)}> wcs</button>
-        )}
-        {password === "wcs12345" && (
-          <button onClick={() => updateAxsNeedItems(data)}> axs</button>
-        )}
+        <button onClick={() => updateWcsNeedItems(data)}> wcs</button>
+        <button onClick={() => updateAxsNeedItems(data)}> axs</button>
       </div>
       {items.length > 0 && boms.length > 0 && table1.length > 0 && (
         <div
