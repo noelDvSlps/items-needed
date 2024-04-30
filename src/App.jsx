@@ -181,11 +181,10 @@ function App() {
       if (tableName === "qbData1") {
         let tempArray = [];
         // await deleteQbItems(orgId, "token");
-        const qb = d.map((item, index) => {
+        const qb = d.map((item) => {
           const itemNumber = item.__EMPTY_2;
           const itemNumber2 = itemNumber ? itemNumber.split(" ") : [undefined];
           item.__EMPTY_2 = itemNumber2[0];
-          const c = index + 1;
 
           if (
             item.__EMPTY_2 !== undefined &&
@@ -818,23 +817,6 @@ function App() {
           createdAt: Date.now(),
         });
       }
-    });
-  };
-
-  const updateQbItems = async () => {
-    await deleteQbItems(orgId, "token");
-    qbData.map(async (qbItem, index) => {
-      setTimeout(async () => {
-        const a = await createQbItem({
-          item: qbItem.__EMPTY_2,
-          onHand: qbItem["On Hand"],
-          onSalesOrder: qbItem["On Sales Order"],
-          available: qbItem.Available,
-          createdAt: Date.now(),
-          orgId,
-        });
-        console.log(a);
-      }, index * 10);
     });
   };
 
